@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Gemini 汉字自由练</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        body { font-family: 'PingFang SC', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; padding-top: 30px; }
+        .input-group { margin-bottom: 20px; display: flex; gap: 10px; }
+        input { padding: 10px; font-size: 16px; border: 2px solid #ddd; border-radius: 5px; width: 150px; outline: none; }
+        input:focus { border-color: #3498db; }
+        #target-div { background: white; border: 2px solid #3498db; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: #3498db; color: white; font-weight: bold; }
+        button:hover { background: #2980b9; }
+        .quiz-btn { background: #2ecc71; }
+        #message { margin-top: 15px; font-weight: bold; color: #34495e; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <h1>汉字自由练习场</h1>
+
+    <div class="input-group">
+        <input type="text" id="char-input" placeholder="输入一个汉字" maxlength="1">
+        <button onclick="updateCharacter()">开始练习</button>
+    </div>
+    
+    <div id="target-div"></div>
+
+    <div id="message">输入汉字并点击“开始练习”</div>
+
+    <div class="controls">
+        <button onclick="writer.animateCharacter()">播放笔顺</button>
+        <button class="quiz-btn" onclick="startQuiz()">进入模考</button>
+        <button style="background:#95a5a6" onclick="reset()">重置</button>
+    </div>
+
+    <script>
+        var writer;
+        
+        // 初始加载“学”字
+        initWriter('学');
+
+        function initWriter(char) {
+            // 如果已经存在实例，先清除容器内容
+            document.getElementById('target-div').innerHTML = '';
+            
+            writer = HanziWriter.create('target-div', char, {
+                width: 300,
+                height: 300,
+                padding: 10,
+                showOutline: true,
+                strokeColor: '#3498db',
+                outlineColor: '#eee'
+            });
+        }
+
+        // 更新汉字逻辑
+        function updateCharacter() {
+            var char = document.getElementById('char-input').value;
+            if (char && char.length === 1) {
+                initWriter(char);
+                document.getElementById('message').innerText = "已加载新字：" + char;
+                document.getElementById('message').style.color = "#34495e";
+            } else {
+                alert("请输入一个汉字哦！");
+            }
+        }
+
+        function startQuiz() {
+            document.getElementById('message').innerText = "请书写...";
+            writer.quiz({
+                onMistake: function() { document.getElementById('message').innerText = "笔顺不对，再试一次！"; },
+                onComplete: function() { document.getElementById('message').innerText = "太棒了，书写正确！"; }
+            });
+        }
+
+        function reset() {
+            writer.cancelQuiz();
+            writer.showCharacter();
+            document.getElementById('message').innerText = "已重置";
+        }
+    </script>
+</body>
+<footer style="margin-top: 50px; color: #95a5a6; font-size: 12px; text-align: center;">
+    <p>数据来源：<a href="https://hanziwriter.org/" target="_blank">Hanzi Writer</a> / 
+    <a href="https://github.com/skishore/makemeahanzi" target="_blank">Make Me a Hanzi</a></p>
+    <p>本项目代码采用 MIT 协议开源</p>
+</footer>
+</html>
