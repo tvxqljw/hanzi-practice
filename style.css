@@ -1,0 +1,87 @@
+/* 基础复位 */
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    background: #fafafa; 
+    margin: 0; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+}
+
+h1 { margin-top: 40px; font-size: 1.8rem; color: #333; }
+
+/* 输入框区域适配 */
+.input-group { 
+    width: 100%; 
+    max-width: calc(100vw - 200px); 
+    display: flex; 
+    gap: 10px; 
+    margin: 20px 0 40px 0; 
+}
+
+input { 
+    flex: 1; 
+    padding: 12px; 
+    font-size: 16px; 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    outline: none;
+}
+
+/* 汉字容器：左右留白 100px */
+#writer-container { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 25px; 
+    justify-content: center; 
+    width: 100%;
+    max-width: calc(100vw - 200px); 
+    margin: 0 auto 120px auto; 
+}
+
+.char-unit { display: flex; flex-direction: column; align-items: center; }
+.pinyin-label { font-size: 18px; color: #e67e22; margin-bottom: 8px; font-weight: bold; }
+
+/* 汉字框 */
+.char-box { 
+    background: white; 
+    border: 1px solid #ddd; 
+    border-radius: 8px;
+    width: 140px; 
+    height: 140px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* 底部控制按钮 */
+.controls { 
+    position: fixed; 
+    bottom: 30px; 
+    display: flex; 
+    gap: 15px; 
+    background: rgba(255, 255, 255, 0.9);
+    padding: 12px 25px;
+    border-radius: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
+
+button { 
+    padding: 10px 20px; 
+    background: #3498db; 
+    color: white; 
+    border: none; 
+    border-radius: 20px; 
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+button:active { transform: scale(0.95); }
+#reset-btn { background: #e74c3c; }
+
+/* 手机端响应式覆盖 */
+@media (max-width: 768px) {
+    .input-group, #writer-container { max-width: calc(100vw - 40px); }
+    .char-box { width: 90px; height: 90px; }
+    .pinyin-label { font-size: 14px; }
+}
