@@ -1,75 +1,85 @@
 let writers = [];
 const { pinyin } = pinyinPro;
 
-// 根据屏幕宽度获取汉字尺寸
 function getCharSize() {
     return window.innerWidth >= 768 ? 140 : 90;
 }
 
-// 核心渲染函数
 function renderAll() {
     const input = document.getElementById('chars-input').value;
     const container = document.getElementById('writer-container');
-    container.innerHTML = ''; // 清空旧内容
+    container.innerHTML = '';
     writers = [];
 
-    const pinyinList = pinyin(input, { type: 'array' });
     const size = getCharSize();
+    const pinyinList = pinyin(input, { type: 'array' });
 
     for (let i = 0; i < input.length; i++) {
         const char = input[i];
-        // 仅处理中文字符
         if (char.match(/[^\x00-\xff]/)) {
             const unitDiv = document.createElement('div');
             unitDiv.className = 'char-unit';
 
-            // 拼音
             const pinyinDiv = document.createElement('div');
             pinyinDiv.className = 'pinyin-label';
-            pinyinDiv.innerText = pinyinList[i];
+            pinyinDiv.innerText = pinyinList[i] || '';
             unitDiv.appendChild(pinyinDiv);
 
-            // 汉字框
             const charBox = document.createElement('div');
             charBox.className = 'char-box';
             unitDiv.appendChild(charBox);
             container.appendChild(unitDiv);
 
-            // 创建实例
             const writer = HanziWriter.create(charBox, char, {
                 width: size,
                 height: size,
-                padding: 5,
-                strokeColor: '#2c3e50',
-                radicalColor: '#e74c3c', // 红色显示偏旁
-                showOutline: true
+                padding: 10,
+                showOutline: true,
+                showCharacter: true,      // 核心：初始显示
+                strokeColor: '#333333',
+                radicalColor: '#CC0000',
+                outlineColor: '#F0F0F0',
+                drawingColor: '#333333',
+                drawingWidth: 6,
+                highlightOnComplete: true,
+                highlightColor: '#333333'
             });
 
-            // 点击启动测验（写字模式）
-            charBox.addEventListener('click', () => writer.quiz());
-            writers.push(writer);
+            // 强制立即显示汉字，防止某些环境下默认隐藏
+            writer.showCharacter();
+
+            writers.push({
+                instance: writer,
+                el: charBox
+            });
         }
     }
 }
 
-// 异步顺序播放动画
-async function animateAll() {
-    for (const writer of writers) {
-        await writer.animateCharacter();
-    }
+// --- 统一进入练习状态 ---
+function startQuizMode() {
+    writers.forEach(item => {
+        const writer = item.instance;
+        const charBox = item.el;
+
+        charBox.classList.remove('finished');
+        writer.updateColor('outlineColor', '#F0F0F0');
+        
+        // 关键：先取消之前的任何练习状态，隐藏字符，再重新开启 Quiz
+        writer.cancelQuiz(); 
+        writer.hideCharacter();
+        writer.quiz(); 
+    });
 }
 
-// 重置所有字到练习模式
-function resetAll() {
-    writers.forEach(writer => writer.quiz());
+function animateAll() {
+    writers.forEach(item => {
+        // 播放前确保字是可见的，且停止练习模式
+        item.instance.cancelQuiz();
+        item.instance.showCharacter();
+        item.instance.animateCharacter();
+    });
 }
-
-// 窗口大小改变时重新渲染（适配横竖屏切换）
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(renderAll, 300);
-});
 
 // 初始化加载
 renderAll();

@@ -13,15 +13,16 @@
     <h1>汉字笔顺练习</h1>
 
     <div class="input-group">
-        <input type="text" id="chars-input" placeholder="输入汉字..." value="瑞雪兆丰年">
+        <input type="text" id="chars-input" placeholder="输入汉字..." value="你好同学">
         <button onclick="renderAll()">生成练习</button>
     </div>
 
     <div id="writer-container"></div>
 
     <div class="controls">
-        <button onclick="animateAll()">顺序播放</button>
-        <button id="reset-btn" onclick="resetAll()">重置书写</button>
+        <button onclick="animateAll()">播放演示</button>
+        <button style="background:#2ecc71" onclick="startQuizMode()">跟写练习</button>
+        <button id="reset-btn" onclick="renderAll()">重置全部</button>
     </div>
 
     <script src="script.js"></script>
