@@ -2,90 +2,180 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Gemini 汉字自由练</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>响应式汉字练习</title>
     <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <script src="https://unpkg.com/pinyin-pro"></script>
+
     <style>
-        body { font-family: 'PingFang SC', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; padding-top: 30px; }
-        .input-group { margin-bottom: 20px; display: flex; gap: 10px; }
-        input { padding: 10px; font-size: 16px; border: 2px solid #ddd; border-radius: 5px; width: 150px; outline: none; }
-        input:focus { border-color: #3498db; }
-        #target-div { background: white; border: 2px solid #3498db; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: #3498db; color: white; font-weight: bold; }
-        button:hover { background: #2980b9; }
-        .quiz-btn { background: #2ecc71; }
-        #message { margin-top: 15px; font-weight: bold; color: #34495e; min-height: 1.2em; }
+        /* 基础样式 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #fafafa; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        h1 { font-size: 1.5rem; color: #333; margin-bottom: 20px; }
+
+        .input-group { 
+            width: 100%; 
+            max-width: 500px; 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 30px; 
+        }
+
+        input { 
+            flex: 1; 
+            padding: 12px; 
+            font-size: 16px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            outline: none;
+        }
+
+        button { 
+            padding: 10px 15px; 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* 响应式容器：核心改动 */
+        #writer-container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+            justify-content: center; 
+            width: 100%;
+        }
+
+        .char-unit { display: flex; flex-direction: column; align-items: center; }
+
+        .pinyin-label { font-size: 14px; color: #e67e22; margin-bottom: 4px; font-weight: 500; }
+
+        /* 默认汉字大小（针对手机） */
+        .char-box { 
+            background: white; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+            width: 80px;  /* 手机端默认小一点，防止排不下 */
+            height: 80px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* iPad 及平板适配 (宽度 > 768px) */
+        @media (min-width: 768px) {
+            h1 { font-size: 2rem; }
+            .char-box { 
+                width: 140px; /* 平板端显示大格子 */
+                height: 140px; 
+            }
+            .pinyin-label { font-size: 18px; }
+            input { font-size: 18px; }
+        }
+
+        /* 底部控制栏适配手机 */
+        .controls { 
+            position: fixed; 
+            bottom: 20px; 
+            display: flex; 
+            gap: 10px; 
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+        }
     </style>
 </head>
 <body>
 
-    <h1>汉字自由练习场</h1>
+    <h1>汉字练习 (移动端适配版)</h1>
 
     <div class="input-group">
-        <input type="text" id="char-input" placeholder="输入一个汉字" maxlength="1">
-        <button onclick="updateCharacter()">开始练习</button>
+        <input type="text" id="chars-input" placeholder="输入汉字..." value="瑞雪兆丰年">
+        <button onclick="renderAll()">生成</button>
     </div>
-    
-    <div id="target-div"></div>
 
-    <div id="message">输入汉字并点击“开始练习”</div>
+    <div id="writer-container"></div>
 
     <div class="controls">
-        <button onclick="writer.animateCharacter()">播放笔顺</button>
-        <button class="quiz-btn" onclick="startQuiz()">进入模考</button>
-        <button style="background:#95a5a6" onclick="reset()">重置</button>
+        <button onclick="animateAll()">顺序播放</button>
+        <button style="background:#e74c3c" onclick="resetAll()">重置书写</button>
     </div>
 
     <script>
-        var writer;
-        
-        // 初始加载“学”字
-        initWriter('学');
+        let writers = [];
+        const { pinyin } = pinyinPro;
 
-        function initWriter(char) {
-            // 如果已经存在实例，先清除容器内容
-            document.getElementById('target-div').innerHTML = '';
-            
-            writer = HanziWriter.create('target-div', char, {
-                width: 300,
-                height: 300,
-                padding: 10,
-                showOutline: true,
-                strokeColor: '#3498db',
-                outlineColor: '#eee'
-            });
+        function getCharSize() {
+            // 根据屏幕宽度动态计算汉字大小
+            return window.innerWidth >= 768 ? 140 : 80;
         }
 
-        // 更新汉字逻辑
-        function updateCharacter() {
-            var char = document.getElementById('char-input').value;
-            if (char && char.length === 1) {
-                initWriter(char);
-                document.getElementById('message').innerText = "已加载新字：" + char;
-                document.getElementById('message').style.color = "#34495e";
-            } else {
-                alert("请输入一个汉字哦！");
+        function renderAll() {
+            const input = document.getElementById('chars-input').value;
+            const container = document.getElementById('writer-container');
+            container.innerHTML = '';
+            writers = [];
+
+            const pinyinList = pinyin(input, { type: 'array' });
+            const size = getCharSize();
+
+            for (let i = 0; i < input.length; i++) {
+                const char = input[i];
+                if (char.match(/[^\x00-\xff]/)) {
+                    const unitDiv = document.createElement('div');
+                    unitDiv.className = 'char-unit';
+
+                    const pinyinDiv = document.createElement('div');
+                    pinyinDiv.className = 'pinyin-label';
+                    pinyinDiv.innerText = pinyinList[i];
+                    unitDiv.appendChild(pinyinDiv);
+
+                    const charBox = document.createElement('div');
+                    charBox.className = 'char-box';
+                    unitDiv.appendChild(charBox);
+                    container.appendChild(unitDiv);
+
+                    const writer = HanziWriter.create(charBox, char, {
+                        width: size,
+                        height: size,
+                        padding: 5,
+                        strokeColor: '#2c3e50',
+                        showOutline: true
+                    });
+
+                    // 移动端点击即练习书写
+                    charBox.addEventListener('click', () => writer.quiz());
+                    writers.push(writer);
+                }
             }
         }
 
-        function startQuiz() {
-            document.getElementById('message').innerText = "请书写...";
-            writer.quiz({
-                onMistake: function() { document.getElementById('message').innerText = "笔顺不对，再试一次！"; },
-                onComplete: function() { document.getElementById('message').innerText = "太棒了，书写正确！"; }
+        function animateAll() {
+            let chain = Promise.resolve();
+            writers.forEach(writer => {
+                chain = chain.then(() => writer.animateCharacter());
             });
         }
 
-        function reset() {
-            writer.cancelQuiz();
-            writer.showCharacter();
-            document.getElementById('message').innerText = "已重置";
+        function resetAll() {
+            writers.forEach(writer => writer.quiz());
         }
+
+        // 监听窗口大小变化
+        window.addEventListener('resize', renderAll);
+
+        renderAll();
     </script>
 </body>
-<footer style="margin-top: 50px; color: #95a5a6; font-size: 12px; text-align: center;">
-    <p>数据来源：<a href="https://hanziwriter.org/" target="_blank">Hanzi Writer</a> / 
-    <a href="https://github.com/skishore/makemeahanzi" target="_blank">Make Me a Hanzi</a></p>
-    <p>本项目代码采用 MIT 协议开源</p>
-</footer>
 </html>
